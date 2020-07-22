@@ -9,11 +9,15 @@ import itertools
 import sys
 import PIL.Image
 import numpy as np
+import json
 
+Encoding_dir = os.path.join(os.getcwd(), "..", "Face_encodings")
 
 def scan_known_people(known_people_folder):
     known_names = []
     known_face_encodings = []
+
+    encoding_dict = dict()
 
     for file in image_files_in_folder(known_people_folder):
         basename = os.path.splitext(os.path.basename(file))[0]
@@ -28,7 +32,13 @@ def scan_known_people(known_people_folder):
         else:
             known_names.append(basename)
             known_face_encodings.append(encodings[0])
-
+            encoding_dict[basename] = encodings[0]
+    # Storing the encodings on a JSON file, which can be encrypted.
+    # The base images can hence be deleted.
+    if not os.path.exists(Encoding_dir):
+        os.mkdir(Encoding_dir)
+    with open(os.path.join(Encoding_dir, "enc1.json"), "w") as enc:
+        json.dump(encoding_dict, enc)
     return known_names, known_face_encodings
 
 
@@ -99,6 +109,8 @@ def process_images_in_process_pool(images_to_check, known_names, known_face_enco
 @click.option('--tolerance', default=0.6, help='Tolerance for face comparisons. Default is 0.6. Lower this if you get multiple matches for the same person.')
 @click.option('--show-distance', default=False, type=bool, help='Output face distance. Useful for tweaking tolerance setting.')
 def main(known_people_folder, image_to_check, cpus, tolerance, show_distance):
+    # Add a change here, if encodings file exists, then load encodings from there. 
+    # No need to scan again and again. Also add decryption mechanism (Dread decryption key from a file provided by user)
     known_names, known_face_encodings = scan_known_people(known_people_folder)
 
     # Multi-core processing only supported on Python 3.4 or greater
