@@ -13,34 +13,45 @@ import json
 
 Encoding_dir = os.path.join(os.getcwd(), "..", "Face_encodings")
 
-def scan_known_people(known_people_folder):
-    known_names = []
-    known_face_encodings = []
+def scan_known_people(known_people_folder, isPresent=False):
+    if isPresent == False:
+        # Scan the faces and get encodings
+        known_names = []
+        known_face_encodings = []
 
-    encoding_dict = dict()
+        encoding_dict = dict()
 
-    for file in image_files_in_folder(known_people_folder):
-        basename = os.path.splitext(os.path.basename(file))[0]
-        img = face_recognition.load_image_file(file)
-        encodings = face_recognition.face_encodings(img)
+        for file in image_files_in_folder(known_people_folder):
+            basename = os.path.splitext(os.path.basename(file))[0]
+            img = face_recognition.load_image_file(file)
+            encodings = face_recognition.face_encodings(img)
 
-        if len(encodings) > 1:
-            click.echo("WARNING: More than one face found in {}. Only considering the first face.".format(file))
+            if len(encodings) > 1:
+                click.echo("WARNING: More than one face found in {}. Only considering the first face.".format(file))
 
-        if len(encodings) == 0:
-            click.echo("WARNING: No faces found in {}. Ignoring file.".format(file))
-        else:
-            known_names.append(basename)
-            known_face_encodings.append(encodings[0])
-            encoding_dict[basename] = encodings[0]
-    # Storing the encodings on a JSON file, which can be encrypted.
-    # The base images can hence be deleted.
-    if not os.path.exists(Encoding_dir):
-        os.mkdir(Encoding_dir)
-    with open(os.path.join(Encoding_dir, "enc1.json"), "w") as enc:
-        json.dump(encoding_dict, enc)
-    return known_names, known_face_encodings
-
+            if len(encodings) == 0:
+                click.echo("WARNING: No faces found in {}. Ignoring file.".format(file))
+            else:
+                known_names.append(basename)
+                known_face_encodings.append(encodings[0])
+                encoding_dict[basename] = encodings[0]
+        # Storing the encodings on a JSON file, which can be encrypted.
+        # The base images can hence be deleted.
+        if not os.path.exists(Encoding_dir):
+            os.mkdir(Encoding_dir)
+        with open(os.path.join(Encoding_dir, "enc1.json"), "w") as enc:
+            json.dump(encoding_dict, enc)
+        return known_names, known_face_encodings
+    else:
+        # Load directly from directory
+        with open(os.path.join(known_people_folder, "enc1.json"), "r") as enc:
+            encodings = json.load(enc)
+        known_names = []
+        known_face_encodings = []
+        for k, v in encodings.items():       
+            known_names.append(k)
+            known_face_encodings.append(v)
+        return known_names, known_face_encodings    
 
 def print_result(filename, name, distance, show_distance=False):
     if show_distance:
